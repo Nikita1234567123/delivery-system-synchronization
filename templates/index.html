@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Распределенная система доставки</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            color: white;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 40px;
+        }
+        .links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 250px;
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h2 {
+            margin: 0 0 10px 0;
+        }
+        .card p {
+            color: #666;
+            margin: 0;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚚 Распределенная система управления доставкой</h1>
+        <div class="subtitle">Демонстрация распределенных вычислений и синхронизации</div>
+
+        <div class="links">
+            <a href="/dispatcher" class="card">
+                <div class="icon">📋</div>
+                <h2>Диспетчер</h2>
+                <p>Создавайте заказы. Управляйте системой.</p>
+            </a>
+            <a href="/courier/1" class="card">
+                <div class="icon">🚲</div>
+                <h2>Курьер Алиса</h2>
+                <p>Берите заказы в работу.</p>
+            </a>
+            <a href="/courier/2" class="card">
+                <div class="icon">🛵</div>
+                <h2>Курьер Борис</h2>
+                <p>Берите заказы в работу.</p>
+            </a>
+        </div>
+
+        <div style="margin-top: 50px; color: rgba(255,255,255,0.6); font-size: 14px;">
+            <p>📌 Откройте все три окна. Сначала создайте заказы у диспетчера, затем наблюдайте, как курьеры соревнуются за них.</p>
+            <p>⚡ Без синхронизации два курьера могут взять один заказ → конфликт!</p>
+            <p>✅ С синхронизацией — заказ блокируется при первом взятии.</p>
+        </div>
+    </div>
+</body>
+</html>

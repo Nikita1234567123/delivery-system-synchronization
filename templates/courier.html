@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Курьер {{ courier_name }} - Система доставки</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00d4ff;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .order-item {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .take-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .take-btn:hover {
+            background: #059669;
+        }
+        .take-btn:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+        .taken-list {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .alert-success {
+            background: #10b981;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .alert-warning {
+            background: #f59e0b;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            color: #1a1a2e;
+        }
+        .alert-error {
+            background: #dc2626;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .conflict-badge {
+            background: #dc2626;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛵 Курьер {{ courier_name }}</h1>
+
+        <div class="card">
+            <h3>📦 Доступные заказы</h3>
+            <div id="availableOrders"></div>
+        </div>
+
+        <div class="card">
+            <h3>✅ Мои взятые заказы</h3>
+            <div class="taken-list" id="takenOrders">
+                Нет взятых заказов
+            </div>
+        </div>
+
+        <div id="message" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        const courierId = {{ courier_id }};
+        const courierName = '{{ courier_name }}';
+
+        function loadData() {
+            fetch('/api/get_orders')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.orders) {
+                        renderAvailableOrders(data.orders);
+                        renderMyOrders(data.orders);
+                    }
+                })
+                .catch(err => console.error('Ошибка:', err));
+        }
+
+        function renderAvailableOrders(orders) {
+            const container = document.getElementById('availableOrders');
+            const pendingOrders = [];
+
+            for (const id in orders) {
+                if (orders[id].status === 'pending') {
+                    pendingOrders.push({id: id, ...orders[id]});
+                }
+            }
+
+            if (pendingOrders.length === 0) {
+                container.innerHTML = '<p style="color: #888;">⏳ Нет доступных заказов</p>';
+                return;
+            }
+
+            let html = '';
+            for (const order of pendingOrders) {
+                html += `
+                    <div class="order-item">
+                        <div>
+                            <strong>Заказ #${order.id}</strong><br>
+                            <small>${order.description} | Создан: ${order.created_at}</small>
+                        </div>
+                        <button class="take-btn" onclick="takeOrder(${order.id})">📋 Взять заказ</button>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderMyOrders(orders) {
+            const container = document.getElementById('takenOrders');
+            const myOrders = [];
+
+            for (const id in orders) {
+                if (orders[id].taken_by && orders[id].taken_by.includes(courierId)) {
+                    myOrders.push({id: id, ...orders[id]});
+                }
+            }
+
+            if (myOrders.length === 0) {
+                container.innerHTML = 'Нет взятых заказов';
+                return;
+            }
+
+            let html = '';
+            for (const order of myOrders) {
+                const conflict = order.taken_by && order.taken_by.length > 1;
+                html += `
+                    <div style="padding: 5px 0; border-bottom: 1px solid #333;">
+                        Заказ #${order.id}: ${order.description}
+                        ${conflict ? '<span class="badge conflict-badge">⚠️ КОНФЛИКТ! Заказ взяли несколько курьеров</span>' : ''}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function takeOrder(orderId) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ Обработка...';
+
+            fetch('/api/take_order', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({order_id: orderId, courier_id: courierId})
+            })
+            .then(res => res.json())
+            .then(data => {
+                const msgDiv = document.getElementById('message');
+                if (data.success) {
+                    if (data.conflict) {
+                        msgDiv.innerHTML = `<div class="alert-warning">⚠️ ${data.message}</div>`;
+                    } else {
+                        msgDiv.innerHTML = `<div class="alert-success">✅ ${data.message}</div>`;
+                    }
+                } else {
+                    msgDiv.innerHTML = `<div class="alert-error">❌ ${data.error}</div>`;
+                }
+
+                loadData();
+
+                setTimeout(() => {
+                    msgDiv.innerHTML = '';
+                }, 3000);
+            })
+            .catch(err => {
+                document.getElementById('message').innerHTML = `<div class="alert-error">❌ Ошибка соединения</div>`;
+                loadData();
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = '📋 Взять заказ';
+            });
+        }
+
+        loadData();
+        setInterval(loadData, 2000);
+    </script>
+</body>
+</html>
